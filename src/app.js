@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectID } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 import dotenv from "dotenv";
@@ -15,25 +15,21 @@ app.listen(5000, () => {
 });
 
 // conexão e criação do db
-const mongoClient = new MongoClient(process.env.DATABASE_URL);
+const client = new MongoClient(process.env.DATABASE_URL);
 let db;
 
-mongoClient.connect((error) => {
+client.connect((error) => {
     if (error) {
         console.log(`Falha na conexão com MongoDB: ${error}`);
         process.exit(1);
     }
 
     console.log("Conectado a MongoDB");
-    db = mongoClient.db();
+    db = client.db();
+});
 
-    // collection de participants com validação joi
-    const participants = db.collection("participants");
-    const participantSchema = joi.object({
-        name: joi.string().min(1).required(),
-    });
-
-    const messages = db.collection("messages");
+const participantSchema = joi.object({
+    name: joi.string().min(1).required(),
 });
 
 // requisiçoes
@@ -46,7 +42,9 @@ app.post("/participants", async (req, res) => {
 
         const { name } = req.body;
 
-        const nameExists = await participants.findOne({ name });
+        const nameExists = await db
+            .collection("participants")
+            .findOne({ name });
 
         if (nameExists) {
             return res.status(409).send("Usuario ja existe");
@@ -55,7 +53,7 @@ app.post("/participants", async (req, res) => {
         const lastStatus = Date.now();
 
         const participant = { name, lastStatus };
-        await participants.insertOne(participant);
+        await db.collection("participants").insertOne(participant);
 
         const message = {
             from: name,
@@ -64,11 +62,23 @@ app.post("/participants", async (req, res) => {
             type: "status",
             time: dayjs().format("HH:mm:ss"),
         };
-        await messages.insertOne(message);
+        await db.collection("messages").insertOne(message);
 
         console.log("Usuario salvo com sucesso");
         return res.sendStatus(201);
     } catch (error) {
+        return res.sendStatus(500);
+    }
+});
+
+app.get("/participants", async (req, res) => {
+    try {
+        const participants = await db
+            .collection("participants")
+            .find()
+            .toArray();
+        return res.json(participants);
+    } catch (err) {
         return res.sendStatus(500);
     }
 });
