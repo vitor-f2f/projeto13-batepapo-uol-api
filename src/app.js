@@ -29,6 +29,12 @@ const participantSchema = joi.object({
     name: joi.string().min(1).required(),
 });
 
+const messageSchema = joi.object({
+    to: joi.string().min(1).required(),
+    text: joi.string().min(1).required(),
+    type: joi.string().valid("message", "private_message").required(),
+});
+
 // requisiçoes
 app.post("/participants", async (req, res) => {
     const participant = req.body;
@@ -36,7 +42,7 @@ app.post("/participants", async (req, res) => {
         abortEarly: false,
     });
     if (error) {
-        return res.status(422).send("Erro de validação");
+        return res.status(422).send("Erro de validação do usuario");
     }
 
     try {
@@ -81,6 +87,47 @@ app.get("/participants", async (req, res) => {
         return res.json(participants);
     } catch (err) {
         return res.sendStatus(500);
+    }
+});
+
+app.post("/messages", async (req, res) => {
+    try {
+        const message = req.body;
+        const from = req.headers.from;
+
+        if (!from) {
+            throw new Error("Header incorreto");
+        }
+
+        const userFrom = await db
+            .collection("participants")
+            .findOne({ name: from });
+        if (!userFrom) {
+            throw new Error("Usuario não encontrado");
+        }
+
+        const { error: validationError } = messageSchema.validate(message, {
+            abortEarly: false,
+        });
+
+        if (validationError) {
+            throw new Error("Mensagem invalida");
+        }
+        const { to, text, type } = message;
+        const msgTime = dayjs().format("HH:mm:ss");
+        const messageObj = {
+            from,
+            to,
+            text,
+            type,
+            time: msgTime,
+        };
+        await db.collection("messages").insertOne(messageObj);
+
+        console.log("Mensagem enviada com sucesso");
+        return res.sendStatus(201);
+    } catch (error) {
+        return res.status(422).send(error.message);
     }
 });
 
