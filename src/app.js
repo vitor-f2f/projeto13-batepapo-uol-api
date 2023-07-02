@@ -131,6 +131,37 @@ app.post("/messages", async (req, res) => {
     }
 });
 
+app.get("/messages", async (req, res) => {
+    const user = req.headers.user;
+    const limit = parseInt(req.query.limit);
+
+    if (isNaN(limit) || limit <= 0) {
+        return res.status(422).send("Limite invalido");
+    }
+
+    try {
+        let query = {
+            $or: [
+                { type: "message" },
+                { $and: [{ type: "private_message" }, { to: user }] },
+            ],
+        };
+        let messages;
+        if (limit) {
+            messages = await db
+                .collection("messages")
+                .find(query)
+                .limit(limit)
+                .toArray();
+        } else {
+            messages = await db.collection("messages").find(query).toArray();
+        }
+        return res.json(messages);
+    } catch (err) {
+        return res.sendStatus(500);
+    }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`Usando porta ${PORT}`);
