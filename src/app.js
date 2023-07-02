@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient, ObjectID } from "mongodb";
+import { MongoClient } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 import dotenv from "dotenv";
