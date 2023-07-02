@@ -93,7 +93,7 @@ app.get("/participants", async (req, res) => {
 app.post("/messages", async (req, res) => {
     try {
         const message = req.body;
-        const from = req.headers.from;
+        const from = req.headers.User;
 
         if (!from) {
             throw new Error("Header incorreto");
