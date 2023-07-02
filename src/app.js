@@ -132,8 +132,8 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-    const user = req.headers.user;
-    const limit = parseInt(req.query.limit);
+    const { user } = req.headers;
+    const { limit } = req.query;
 
     if (isNaN(limit) || limit <= 0) {
         return res.status(422).send("Limite invalido");
@@ -159,6 +159,27 @@ app.get("/messages", async (req, res) => {
         return res.json(messages);
     } catch (err) {
         return res.sendStatus(500);
+    }
+});
+
+app.post("/status", async (req, res) => {
+    const userName = req.headers.user;
+
+    if (!userName) {
+        return res.status(404).send("Header invalido");
+    }
+
+    try {
+        const user = db.collection("participants".findOne({ name: userName }));
+        if (!user) {
+            return res.status(404).send("Usuario não foi encontrado");
+        }
+        await db
+            .collection("participants")
+            .updateOne({ _id: user._id }, { $set: { lastStatus: Date.now() } });
+        return res.sendStatus(200);
+    } catch (error) {
+        return res.status(500).send("Erro ao atualizar status");
     }
 });
 
