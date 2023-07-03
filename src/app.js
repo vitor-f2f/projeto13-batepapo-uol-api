@@ -39,7 +39,7 @@ const messageSchema = joi.object({
 // requisiçoes
 app.post("/participants", async (req, res) => {
     let participant = req.body;
-    if (participant.name) {
+    if (typeof participant.name == "string") {
         participant.name = stripHtml(participant.name).result.trim();
     }
     const { error } = participantSchema.validate(participant, {
