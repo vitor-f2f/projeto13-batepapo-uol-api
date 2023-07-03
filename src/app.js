@@ -135,7 +135,7 @@ app.get("/messages", async (req, res) => {
     const { user } = req.headers;
     let limit = parseInt(req.query.limit);
 
-    if (limit && (isNaN(limit) || limit <= 0)) {
+    if (req.query.limit && (isNaN(limit) || limit <= 0)) {
         return res.status(422).send("Limite invalido");
     }
 
@@ -176,7 +176,7 @@ app.post("/status", async (req, res) => {
         if (user) {
             const result = await db
                 .collection("participants")
-                .updateOne(filter, update);
+                .updateOne({ name: userName }, update);
             return res.sendStatus(200);
         } else {
             return res.status(404).send("Usuario não foi encontrado");
