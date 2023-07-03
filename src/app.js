@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 import dotenv from "dotenv";
@@ -71,7 +71,7 @@ app.post("/participants", async (req, res) => {
         };
         await db.collection("messages").insertOne(message);
 
-        console.log("Usuario salvo com sucesso");
+        console.log(`Usuario ${participant} salvo com sucesso`);
         return res.sendStatus(201);
     } catch (error) {
         return res.status(500).send("Erro");
@@ -220,6 +220,45 @@ const checkInactive = async () => {
 };
 
 setInterval(checkInactive, 15000);
+
+app.put("/messages/:id", async (req, res) => {
+    const id = req.params["id"];
+    const { user } = req.headers;
+    const message = req.body;
+
+    const { error: validationError } = messageSchema.validate(message, {
+        abortEarly: false,
+    });
+    if (validationError) {
+        return res.status(422).send("Erro de validação");
+    }
+
+    try {
+        const findMessage = await db
+            .collection("messages")
+            .findOne({ _id: new ObjectId(id) });
+        if (findMessage.from !== user) {
+            return res.send(401).send("Você não tem permissão para isso");
+        }
+        const update = {
+            $set: { to: message.to, text: message.text, type: message.type },
+        };
+        if (findMessage) {
+            const result = await db
+                .collection("messages")
+                .updateOne({ _id: id }, update);
+            const newmsg = await db
+                .collection("messages")
+                .findOne({ text: message.text });
+            console.log(newmsg);
+            return res.sendStatus(200);
+        } else {
+            return res.status(404).send("Mensagem não foi encontrada");
+        }
+    } catch (error) {
+        return res.status(500).send("Erro ao atualizar mensagem");
+    }
+});
 
 const PORT = 5000;
 app.listen(PORT, () => {
