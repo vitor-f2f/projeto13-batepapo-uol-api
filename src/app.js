@@ -141,15 +141,17 @@ app.get("/messages", async (req, res) => {
 
     try {
         let query = {
-            $or: [{ to: "Todos" }, { to: user }],
+            $or: [{ to: "Todos" }, { to: user }, { from: user }],
         };
         let messages;
         if (limit) {
             messages = await db
                 .collection("messages")
                 .find(query)
+                .sort({ _id: -1 })
                 .limit(limit)
                 .toArray();
+            messages.reverse();
         } else {
             messages = await db.collection("messages").find(query).toArray();
         }
