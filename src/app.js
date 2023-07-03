@@ -185,6 +185,41 @@ app.post("/status", async (req, res) => {
     }
 });
 
+const checkInactive = async () => {
+    try {
+        const inactiveUsers = await db
+            .collection("participants")
+            .find({ lastStatus: { $lt: Date.now() - 10000 } })
+            .toArray();
+        if (inactiveUsers.length === 0) {
+            return;
+        }
+
+        const currentTime = dayjs().format("HH:mm:ss");
+
+        await db.collection("participants").deleteMany({
+            _id: { $in: inactiveUsers.map((user) => user._id) },
+        });
+
+        const statusMessages = inactiveUsers.map((user) => {
+            console.log(`Usuario removido: ${user.name}`);
+            return {
+                from: user.name,
+                to: "Todos",
+                text: "sai da sala...",
+                type: "status",
+                time: currentTime,
+            };
+        });
+
+        await db.collection("messages").insertMany(statusMessages);
+    } catch {
+        return console.log("Erro ao checar usuarios inativos");
+    }
+};
+
+setInterval(checkInactive, 15000);
+
 const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`Usando porta ${PORT}`);
