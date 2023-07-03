@@ -71,7 +71,7 @@ app.post("/participants", async (req, res) => {
         };
         await db.collection("messages").insertOne(message);
 
-        console.log(`Usuario ${participant} salvo com sucesso`);
+        console.log(`Usuario ${participant.name} salvo com sucesso`);
         return res.sendStatus(201);
     } catch (error) {
         return res.status(500).send("Erro");
@@ -237,24 +237,31 @@ app.put("/messages/:id", async (req, res) => {
         const findMessage = await db
             .collection("messages")
             .findOne({ _id: new ObjectId(id) });
+
+        if (findMessage == null) {
+            return res.status(404).send("Mensagem não foi encontrada");
+        }
+
+        console.log(findMessage);
+
         if (findMessage.from !== user) {
             return res.send(401).send("Você não tem permissão para isso");
         }
+
         const update = {
             $set: { to: message.to, text: message.text, type: message.type },
         };
-        if (findMessage) {
-            const result = await db
-                .collection("messages")
-                .updateOne({ _id: id }, update);
-            const newmsg = await db
-                .collection("messages")
-                .findOne({ text: message.text });
-            console.log(newmsg);
-            return res.sendStatus(200);
-        } else {
-            return res.status(404).send("Mensagem não foi encontrada");
-        }
+
+        const result = await db
+            .collection("messages")
+            .updateOne({ _id: id }, update);
+
+        const newmsg = await db
+            .collection("messages")
+            .findOne({ text: message.text });
+
+        console.log(newmsg);
+        return res.sendStatus(200);
     } catch (error) {
         return res.status(500).send("Erro ao atualizar mensagem");
     }
