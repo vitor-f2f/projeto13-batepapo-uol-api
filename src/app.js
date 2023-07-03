@@ -133,7 +133,7 @@ app.post("/messages", async (req, res) => {
 
 app.get("/messages", async (req, res) => {
     const { user } = req.headers;
-    const { limit } = req.query;
+    let limit = parseInt(req.query.limit);
 
     if (limit && (isNaN(limit) || limit <= 0)) {
         return res.status(422).send("Limite invalido");
