@@ -221,6 +221,33 @@ const checkInactive = async () => {
 
 setInterval(checkInactive, 15000);
 
+app.delete("/messages/:id", async (req, res) => {
+    const id = req.params["id"];
+    const { user } = req.headers;
+
+    try {
+        const findMessage = await db
+            .collection("messages")
+            .findOne({ _id: new ObjectId(id) });
+
+        if (findMessage == null) {
+            return res.status(404).send("Mensagem não foi encontrada");
+        }
+
+        if (findMessage.from !== user) {
+            return res.status(401).send("Você não tem permissão para isso");
+        }
+
+        const deleteMsg = await db
+            .collection("messages")
+            .deleteOne({ _id: new ObjectId(id) });
+
+        return res.sendStatus(200);
+    } catch (error) {
+        return res.status(500).send("Erro ao apagar mensagem");
+    }
+});
+
 app.put("/messages/:id", async (req, res) => {
     const id = req.params["id"];
     const { user } = req.headers;
@@ -256,11 +283,6 @@ app.put("/messages/:id", async (req, res) => {
             .collection("messages")
             .updateOne({ _id: id }, update);
 
-        const newmsg = await db
-            .collection("messages")
-            .findOne({ text: message.text });
-
-        console.log(newmsg);
         return res.sendStatus(200);
     } catch (error) {
         return res.status(500).send("Erro ao atualizar mensagem");
