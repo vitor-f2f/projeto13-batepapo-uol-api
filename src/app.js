@@ -141,10 +141,7 @@ app.get("/messages", async (req, res) => {
 
     try {
         let query = {
-            $or: [
-                { type: "message" },
-                { $and: [{ type: "private_message" }, { to: user }] },
-            ],
+            $or: [{ to: "Todos" }, { to: user }],
         };
         let messages;
         if (limit) {
@@ -156,7 +153,7 @@ app.get("/messages", async (req, res) => {
         } else {
             messages = await db.collection("messages").find(query).toArray();
         }
-        return res.json(messages);
+        return res.status(200).json(messages);
     } catch (err) {
         return res.sendStatus(500);
     }
