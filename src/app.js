@@ -170,14 +170,16 @@ app.post("/status", async (req, res) => {
     }
 
     try {
-        const user = db.collection("participants".findOne({ name: userName }));
-        if (!user) {
+        const filter = { name: userName };
+        const update = { $set: { lastStatus: Date.now() } };
+        if (filter) {
+            const result = await db
+                .collection("participants")
+                .updateOne(filter, update);
+            return res.sendStatus(200);
+        } else {
             return res.status(404).send("Usuario não foi encontrado");
         }
-        await db
-            .collection("participants")
-            .updateOne({ _id: user._id }, { $set: { lastStatus: Date.now() } });
-        return res.sendStatus(200);
     } catch (error) {
         return res.status(500).send("Erro ao atualizar status");
     }
