@@ -4,6 +4,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import joi from "joi";
 import dotenv from "dotenv";
+import { stripHtml } from "string-strip-html";
 
 dotenv.config();
 
@@ -37,7 +38,10 @@ const messageSchema = joi.object({
 
 // requisiçoes
 app.post("/participants", async (req, res) => {
-    const participant = req.body;
+    let participant = req.body;
+    if (participant.name) {
+        participant.name = stripHtml(participant.name).result.trim();
+    }
     const { error } = participantSchema.validate(participant, {
         abortEarly: false,
     });
@@ -92,8 +96,8 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
     try {
-        const message = req.body;
-        const from = req.headers.user;
+        let message = req.body;
+        let from = req.headers.user;
 
         if (!from) {
             throw new Error("Header incorreto");
@@ -103,7 +107,7 @@ app.post("/messages", async (req, res) => {
             .collection("participants")
             .findOne({ name: from });
         if (!userFrom) {
-            throw new Error("Usuario não encontrado");
+            throw new Error("Usuário não encontrado");
         }
 
         const { error: validationError } = messageSchema.validate(message, {
@@ -111,15 +115,21 @@ app.post("/messages", async (req, res) => {
         });
 
         if (validationError) {
-            throw new Error("Mensagem invalida");
+            throw new Error("Mensagem inválida");
         }
-        const { to, text, type } = message;
+
+        // strip-html
+        from = stripHtml(from).result.trim();
+        message.to = stripHtml(message.to).result.trim();
+        message.text = stripHtml(message.text).result.trim();
+        message.type = stripHtml(message.type).result.trim();
+
         const msgTime = dayjs().format("HH:mm:ss");
         const messageObj = {
             from,
-            to,
-            text,
-            type,
+            to: message.to,
+            text: message.text,
+            type: message.type,
             time: msgTime,
         };
         await db.collection("messages").insertOne(messageObj);
