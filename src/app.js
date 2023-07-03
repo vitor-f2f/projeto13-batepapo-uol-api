@@ -135,7 +135,7 @@ app.get("/messages", async (req, res) => {
     const { user } = req.headers;
     const { limit } = req.query;
 
-    if (isNaN(limit) || limit <= 0) {
+    if (limit && (isNaN(limit) || limit <= 0)) {
         return res.status(422).send("Limite invalido");
     }
 
