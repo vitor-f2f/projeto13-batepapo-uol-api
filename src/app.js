@@ -169,9 +169,11 @@ app.post("/status", async (req, res) => {
     }
 
     try {
-        const filter = { name: userName };
+        const user = await db
+            .collection("participants")
+            .findOne({ name: userName });
         const update = { $set: { lastStatus: Date.now() } };
-        if (filter) {
+        if (user) {
             const result = await db
                 .collection("participants")
                 .updateOne(filter, update);
